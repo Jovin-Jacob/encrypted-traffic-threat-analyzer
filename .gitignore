@@ -1,0 +1,7 @@
+.venv/
+.pip-tmp/
+__pycache__/
+*.py[cod]
+EncryptedTrafficDetector.zip
+.DS_Store
+Thumbs.db

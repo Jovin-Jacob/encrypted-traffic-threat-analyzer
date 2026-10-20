@@ -1,0 +1,1 @@
+label,duration_seconds,packet_count,total_bytes,forward_packets,reverse_packets,forward_bytes,reverse_bytes,mean_packet_size,std_packet_size,mean_interarrival_seconds,payload_bytes,syn_count,ack_count,rst_count,fin_count
