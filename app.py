@@ -28,17 +28,46 @@ except ImportError:
 st.set_page_config(page_title="Encrypted Traffic Threat Analyzer", page_icon="◈", layout="wide")
 st.markdown("""
 <style>
-html, body, [class*="css"] { font-family: Arial, sans-serif; }
-.stApp { background: #f5f7fb; }
-[data-testid="stSidebar"] { background: #111b31; }
-[data-testid="stSidebar"] * { color: #eaf0ff !important; }
-.hero { padding: 1.55rem 1.8rem; border-radius: 18px; color: white; background: linear-gradient(115deg,#122443,#176b76); margin-bottom: 1.15rem; }
-.hero h1 { font-family: Manrope, sans-serif; letter-spacing: -.035em; font-size: 2rem; margin: 0 0 .35rem; color: white; }
-.hero p { color: #d5e8ef; margin: 0; font-size: 1rem; }
-.note { border: 1px solid #dbe4f1; border-radius: 12px; background: white; padding: 14px 16px; color: #34445c; }
-.pill { display:inline-block; padding:4px 9px; border-radius:999px; font-size:.8rem; font-weight:700; background:#e7f5f3; color:#16766d; }
-div[data-testid="stMetric"] { background:white; border:1px solid #e4eaf2; padding:14px; border-radius:12px; }
-h1,h2,h3 { font-family: Manrope, sans-serif; }
+:root { --ink:#f2edff; --muted:#b2a8c8; --line:#302743; --purple:#a855f7; --neon:#e879f9; --canvas:#0c0a12; --panel:#15121d; }
+html, body, [class*="css"] { font-family:'Segoe UI',Arial,sans-serif; color:var(--ink); }
+.stApp, [data-testid="stAppViewContainer"] { background:var(--canvas); color:var(--ink); }
+.block-container { max-width:1480px; padding-top:2rem; padding-bottom:3rem; }
+header[data-testid="stHeader"] { background:rgba(12,10,18,.92); }
+h1,h2,h3,h4 { font-family:'Segoe UI',Arial,sans-serif; letter-spacing:-.025em; color:var(--ink) !important; }
+h2 { margin-top:1rem; }
+p, label, [data-testid="stWidgetLabel"] p, [data-testid="stCaptionContainer"] { color:#d7d0e5; }
+[data-testid="stMarkdownContainer"] { color:var(--ink); }
+.brandbar { display:flex; align-items:center; gap:10px; margin:0 0 .9rem; color:#c4b5fd; font-size:.75rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+.brandmark { display:grid; place-items:center; width:34px; height:34px; border-radius:11px; background:#26173b; color:#e879f9; font-size:1.25rem; box-shadow:0 0 18px #a855f744; }
+.local-tag { margin-left:auto; display:inline-flex; align-items:center; gap:7px; border:1px solid #4b2866; border-radius:999px; background:#1b1226; color:#e9a8ff; padding:7px 11px; letter-spacing:.04em; font-size:.7rem; }
+.local-dot { width:7px; height:7px; border-radius:50%; background:#5cf2b4; box-shadow:0 0 10px #5cf2b4; }
+.hero { position:relative; overflow:hidden; padding:1.4rem 1.75rem; border:1px solid #493065; border-radius:18px; color:white; background:radial-gradient(ellipse at 88% 0%,rgba(168,85,247,.27),transparent 38%),linear-gradient(115deg,#171224 0%,#21162f 54%,#24143b 100%); margin-bottom:1rem; box-shadow:0 14px 40px #0005, inset 0 1px #ffffff0c; }
+.hero h1 { font-family:'Segoe UI',Arial,sans-serif; letter-spacing:-.04em; font-size:clamp(1.7rem,2.5vw,2.25rem); line-height:1.12; margin:0 0 .4rem; color:#fff !important; }
+.hero p { color:#d9cee9 !important; margin:0; max-width:800px; font-size:1rem; line-height:1.6; }
+.hero-kicker { color:#e879f9; text-transform:uppercase; letter-spacing:.14em; font-size:.69rem; font-weight:700; margin-bottom:.45rem; }
+.note { border:1px solid #332742; border-left:4px solid #c026d3; border-radius:12px; background:#15121d; padding:12px 16px; color:#d8d0e6; line-height:1.55; margin:0 0 1rem; }
+.note b { color:#f0abfc; }
+.section-intro { color:#b9aecb !important; margin-top:-.35rem; margin-bottom:1rem; }
+div[data-testid="stButton"] > button[kind="secondary"] { color:#e6ddf2 !important; background:#17131f !important; border:1px solid #382b4b !important; }
+div[data-testid="stButton"] > button[kind="secondary"]:hover { color:#fff !important; border-color:#c026d3 !important; background:#241831 !important; box-shadow:0 0 18px #c026d333; }
+div[data-testid="stButton"] > button[kind="primary"] { color:#fff !important; background:linear-gradient(110deg,#7e22ce,#c026d3) !important; border:1px solid #d946ef !important; box-shadow:0 0 16px #c026d344; }
+div[data-testid="stButton"] > button[kind="primary"]:hover { background:linear-gradient(110deg,#9333ea,#d946ef) !important; box-shadow:0 0 24px #d946ef66; }
+div[data-testid="stMetric"] { background:linear-gradient(145deg,#191522,#14111b); border:1px solid #332742; padding:16px 17px; border-radius:14px; box-shadow:0 8px 24px #0003; }
+div[data-testid="stMetricLabel"] { color:#bdb2cf !important; font-size:.82rem; }
+div[data-testid="stMetricValue"] { color:#f5edff !important; font-family:'Segoe UI',Arial,sans-serif; font-weight:700; }
+div[data-testid="stFileUploader"] section { border:1px dashed #67448a; border-radius:14px; background:#15121d; }
+div[data-testid="stFileUploader"] section:hover { border-color:#e879f9; background:#1b1425; }
+div[data-testid="stFileUploader"] section *, [data-testid="stWidgetLabel"] *, [data-testid="stSlider"] * { color:#e8e0f2 !important; }
+div[data-testid="stDataFrame"] { border:1px solid #332742; border-radius:12px; overflow:hidden; }
+div[data-testid="stDataFrame"] iframe { background:#15121d; }
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div, div[data-testid="stTextInput"] input, div[data-testid="stNumberInput"] input { color:#f2edff; background:#17131f; border-color:#40314f; }
+div[data-testid="stSlider"] [data-testid="stThumbValue"] { color:#f0abfc !important; }
+div.stButton > button, div.stDownloadButton > button { border-radius:10px; font-weight:600; min-height:2.65rem; transition:all .15s ease; }
+div[data-testid="stDownloadButton"] > button { color:#f4eaff !important; background:#21182e !important; border:1px solid #533a6d !important; }
+div[data-testid="stDownloadButton"] > button:hover { border-color:#e879f9 !important; box-shadow:0 0 16px #c026d333; }
+div[data-testid="stAlert"] { border-radius:12px; background:#17131f; }
+details { border-radius:12px !important; background:#15121d; }
+@media (max-width:760px) { .block-container { padding:1.4rem 1rem 2rem; } .hero { padding:1.2rem; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -295,15 +324,31 @@ def clean_for_model(frame, columns):
 
 
 def main():
-    with st.sidebar:
-        st.markdown("## ◈ Traffic Lab")
-        st.caption("LOCAL ANALYSIS · PRIVACY FIRST")
-        section = st.radio("Workspace", ["Analyze traffic", "Live monitor", "Train with labels", "About this project"], label_visibility="collapsed")
-        st.markdown("---")
-        st.caption("Capture and analysis stay on this computer. Packet payloads are not stored or decoded.")
-
-    st.markdown('<div class="hero"><h1>Encrypted Traffic Threat Analyzer</h1><p>Explore suspicious network behavior from packet-flow metadata with machine learning.</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="brandbar"><span class="brandmark">◈</span><span>Traffic Lab</span><span class="local-tag"><i class="local-dot"></i>LOCAL · PRIVACY FIRST</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero"><div class="hero-kicker">Network security workspace</div><h1>Encrypted Traffic Threat Analyzer</h1><p>Investigate unusual network behavior from packet-flow metadata. Analyze a capture, monitor a local interface, or evaluate a model with labeled flows.</p></div>', unsafe_allow_html=True)
     st.markdown('<div class="note"><b>Privacy and interpretation:</b> This tool does not decrypt encrypted sessions. It analyzes flow metadata such as packet sizes, timing, ports, and TCP flags. An alert is a lead for investigation, not proof of an attack.</div>', unsafe_allow_html=True)
+
+    sections = ["Analyze traffic", "Live monitor", "Train with labels", "About this project"]
+    if "workspace_section" not in st.session_state:
+        st.session_state["workspace_section"] = sections[0]
+    nav_columns = st.columns(4, gap="small")
+    for index, name in enumerate(sections):
+        if nav_columns[index].button(
+            name,
+            key=f"workspace_nav_{index}",
+            type="primary" if st.session_state["workspace_section"] == name else "secondary",
+            use_container_width=True,
+        ):
+            st.session_state["workspace_section"] = name
+            st.rerun()
+    section = st.session_state["workspace_section"]
+    section_copy = {
+        "Analyze traffic": "Review an offline PCAP, PCAPNG, or flow CSV and download ranked findings.",
+        "Live monitor": "Summarize traffic on a local interface and surface flows that may need review.",
+        "Train with labels": "Measure a supervised model with labeled flow data, then score new flows.",
+        "About this project": "Understand what the analyzer can see, how it works, and where its limits are.",
+    }
+    st.markdown(f'<div class="section-intro">{section_copy[section]}</div>', unsafe_allow_html=True)
 
     if section == "Analyze traffic":
         st.subheader("Analyze an offline capture")

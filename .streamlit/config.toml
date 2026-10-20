@@ -4,3 +4,11 @@ serverAddress = "127.0.0.1"
 
 [server]
 address = "127.0.0.1"
+
+[theme]
+base = "dark"
+primaryColor = "#c026d3"
+backgroundColor = "#0c0a12"
+secondaryBackgroundColor = "#17131f"
+textColor = "#f2edff"
+font = "sans serif"
