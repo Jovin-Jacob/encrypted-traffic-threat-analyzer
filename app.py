@@ -4,6 +4,7 @@ import io
 import ipaddress
 import math
 import statistics
+import time
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,7 +21,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 try:
-    from scapy.utils import PcapReader
+    # Import through scapy.all so Scapy registers Ethernet/IP layer decoders
+    # before PcapReader tries to decode classic Ethernet PCAP files.
+    from scapy.all import PcapReader
 except ImportError:
     PcapReader = None
 
@@ -103,11 +106,15 @@ def extract_pcap(uploaded_file):
     data = uploaded_file.getvalue()
     reader = PcapReader(io.BytesIO(data))
     flows = {}
+    packets_read = 0
+    ip_packets_used = 0
     try:
         for packet in reader:
+            packets_read += 1
             ip_layer = "IP" if packet.haslayer("IP") else "IPv6" if packet.haslayer("IPv6") else None
             if not ip_layer:
                 continue
+            ip_packets_used += 1
             a, b, proto = _endpoint(packet, ip_layer)
             left, right = sorted((a, b))
             key = (left, right, proto)
@@ -157,6 +164,8 @@ def extract_pcap(uploaded_file):
     df = pd.DataFrame(rows)
     if not df.empty:
         df["flow_id"] = [f"F-{i:05d}" for i in range(1, len(df) + 1)]
+    df.attrs["packets_read"] = packets_read
+    df.attrs["ip_packets_used"] = ip_packets_used
     return df
 
 
@@ -359,15 +368,19 @@ def main():
             contamination = st.slider("Expected anomaly share", min_value=0.01, max_value=0.20, value=0.05, step=0.01, help="Used only by Isolation Forest. This is a tuning assumption, not a measured attack rate.")
         if capture:
             try:
+                analysis_started = time.perf_counter()
                 if capture.size > 200 * 1024 * 1024:
                     st.error("This first version supports files up to 200 MB.")
                     return
                 if capture.name.lower().endswith(".csv"):
                     flows = pd.read_csv(capture)
                     source_kind = "CSV flow data"
+                    packets_read = ip_packets_used = None
                 else:
                     with st.spinner("Extracting bidirectional flows from capture…"):
                         flows = extract_pcap(capture)
+                    packets_read = flows.attrs.get("packets_read", 0)
+                    ip_packets_used = flows.attrs.get("ip_packets_used", 0)
                     source_kind = "PCAP flow metadata"
                 if flows.empty:
                     st.warning("No IP flows were found in this file.")
@@ -382,6 +395,7 @@ def main():
                 model = IsolationForest(n_estimators=200, contamination=contamination, random_state=42)
                 predictions = model.fit_predict(X)
                 scores = -model.score_samples(X)
+                analysis_seconds = time.perf_counter() - analysis_started
                 flows["anomaly_score"] = scores
                 flows["detection"] = np.where(predictions == -1, "Review", "No anomaly flagged")
                 suspicious = predictions == -1
@@ -390,11 +404,25 @@ def main():
                 st.session_state["last_source"] = source_kind
                 st.markdown("### Results")
                 metrics = st.columns(4)
-                metrics[0].metric("Flows analyzed", f"{len(flows):,}")
-                metrics[1].metric("Flagged for review", f"{int(suspicious.sum()):,}")
-                metrics[2].metric("Features used", f"{X.shape[1]}")
-                metrics[3].metric("Input", "PCAP" if source_kind.startswith("PCAP") else "CSV")
-                st.caption(f"Isolation Forest fitted to these {len(flows):,} flows. Review share is configured as {contamination:.0%}; this is unsupervised anomaly screening, not a validated attack classifier.")
+                metrics[0].metric("Packets read", f"{packets_read:,}" if packets_read is not None else "—")
+                metrics[1].metric("IP packets used", f"{ip_packets_used:,}" if ip_packets_used is not None else "—")
+                metrics[2].metric("Flows analyzed", f"{len(flows):,}")
+                metrics[3].metric("Analysis time", f"{analysis_seconds:.2f} sec")
+                detail_metrics = st.columns(3)
+                detail_metrics[0].metric("Flagged for review", f"{int(suspicious.sum()):,}")
+                detail_metrics[1].metric("Features used", f"{X.shape[1]}")
+                detail_metrics[2].metric("Capture size", f"{capture.size / (1024 * 1024):.2f} MB")
+                packet_summary = (
+                    f"{packets_read:,} capture packets were read; {ip_packets_used:,} IPv4/IPv6 packets contributed to flows."
+                    if packets_read is not None
+                    else "For CSV uploads, packet totals are unavailable because each row represents a flow."
+                )
+                st.caption(
+                    f"Elapsed time covers file parsing, flow preparation, and Isolation Forest fitting/scoring. "
+                    f"{packet_summary} Isolation Forest was fitted to {len(flows):,} flows using "
+                    f"{X.shape[1]} features. Review share is configured as {contamination:.0%}; "
+                    "this is unsupervised anomaly screening, not a validated attack classifier."
+                )
                 show_cols = [c for c in ["flow_id", "source_ip", "source_port", "destination_ip", "destination_port", "protocol", "packet_count", "total_bytes", "duration_seconds", "anomaly_score", "detection"] if c in flows]
                 st.dataframe(flows.sort_values("anomaly_score", ascending=False)[show_cols], use_container_width=True, hide_index=True)
                 st.download_button("Download results as CSV", data=flows.to_csv(index=False).encode("utf-8"), file_name="traffic_analysis_results.csv", mime="text/csv")
@@ -599,3 +627,4 @@ This local prototype studies detection of suspicious behavior in encrypted netwo
 
 if __name__ == "__main__":
     main()
+
